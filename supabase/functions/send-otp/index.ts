@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
     const smsUser = Deno.env.get("SMS_API_USER");
     const smsToken = Deno.env.get("SMS_API_TOKEN");
     const smsSource = Deno.env.get("SMS_SOURCE_PHONE");
+    console.log("SMS credentials:", { user: smsUser ? `${smsUser.substring(0, 3)}***` : "MISSING", token: smsToken ? `${smsToken.substring(0, 3)}***` : "MISSING", source: smsSource || "MISSING" });
 
     // Format phone for SMS (remove + prefix if present)
     const smsPhone = normalized.startsWith("+") ? normalized.slice(1) : normalized;
