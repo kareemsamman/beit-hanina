@@ -3,11 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
-import { ARABIC_MONTHS, CURRENCY } from '@/lib/constants';
+import { ARABIC_MONTHS } from '@/types';
 import { useNavigate } from 'react-router-dom';
-
-// Need to import ARABIC_MONTHS from types
-import { ARABIC_MONTHS as AM } from '@/types';
 
 export default function CalendarPage() {
   const [year, setYear] = useState(new Date().getFullYear());
