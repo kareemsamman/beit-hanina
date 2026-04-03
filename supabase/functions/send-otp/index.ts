@@ -98,23 +98,19 @@ Deno.serve(async (req) => {
     // Format phone for SMS (remove + prefix if present)
     const smsPhone = normalized.startsWith("+") ? normalized.slice(1) : normalized;
 
-    const smsBody = {
-      sms: {
-        user: { username: smsUser, password: smsToken },
-        source: smsSource,
-        messages: {
-          message: [
-            {
-              id: crypto.randomUUID(),
-              text: `رمز التحقق الخاص بك: ${otp}`,
-              recipients: {
-                recipient: [{ id: "1", phone: smsPhone }],
-              },
-            },
-          ],
-        },
-      },
-    };
+    const msgId = crypto.randomUUID();
+    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
+<sms>
+  <user>
+    <username>${smsUser}</username>
+    <password>${smsToken}</password>
+  </user>
+  <source>${smsSource}</source>
+  <destinations>
+    <phone id="1">${smsPhone}</phone>
+  </destinations>
+  <message>رمز التحقق الخاص بك: ${otp}</message>
+</sms>`;
 
     let smsStatus = "sent";
     let providerResponse = null;
@@ -123,9 +119,9 @@ Deno.serve(async (req) => {
       const smsRes = await fetch("https://019sms.co.il/api", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/xml",
         },
-        body: JSON.stringify(smsBody),
+        body: xmlBody,
       });
       providerResponse = await smsRes.text();
       if (!smsRes.ok) {
