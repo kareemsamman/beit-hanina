@@ -1,0 +1,1 @@
+DELETE FROM otp_codes WHERE phone = '+972525143581';
