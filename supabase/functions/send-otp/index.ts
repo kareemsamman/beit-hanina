@@ -98,23 +98,18 @@ Deno.serve(async (req) => {
     // Format phone for SMS (remove + prefix if present)
     const smsPhone = normalized.startsWith("+") ? normalized.slice(1) : normalized;
 
-    const smsBody = {
-      sms: {
-        user: { username: smsUser },
-        source: smsSource,
-        destinations: {
-          phone: [{ id: "1", number: smsPhone }],
-        },
-        messages: {
-          message: [
-            {
-              id: crypto.randomUUID(),
-              text: `رمز التحقق الخاص بك: ${otp}`,
-            },
-          ],
-        },
-      },
-    };
+    // Build XML body per 019SMS API docs
+    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
+<sms>
+    <user>
+        <username>${smsUser}</username>
+    </user>
+    <source>${smsSource}</source>
+    <destinations>
+        <phone>${smsPhone}</phone>
+    </destinations>
+    <message>رمز التحقق الخاص بك: ${otp}</message>
+</sms>`;
 
     let smsStatus = "sent";
     let providerResponse = null;
