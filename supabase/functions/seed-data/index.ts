@@ -20,20 +20,18 @@ Deno.serve(async (req) => {
 
     // All people from the image
     const people = [
-      // Admin
-      { name: "كريم السمان", phone: "0525143581", apartment: 10, role: "admin", fee: 100 },
-      // Residents
-      { name: "الياس خوري", phone: "0521000001", apartment: 1, role: "resident", fee: 0 },
-      { name: "رافع شقور", phone: "0521000002", apartment: 2, role: "resident", fee: 100 },
-      { name: "نخلة عنتر", phone: "0521000003", apartment: 3, role: "resident", fee: 100 },
-      { name: "روبير سعادة", phone: "0521000004", apartment: 4, role: "resident", fee: 100 },
-      { name: "اليكس اريبب", phone: "0521000005", apartment: 5, role: "resident", fee: 100 },
-      { name: "فكتور حصري", phone: "0521000006", apartment: 6, role: "resident", fee: 100 },
-      { name: "جورج بافلوف", phone: "0521000007", apartment: 7, role: "resident", fee: 100 },
-      { name: "طارق بدر", phone: "0521000008", apartment: 8, role: "resident", fee: 100 },
-      { name: "عبدالله ابوفرحة", phone: "0521000009", apartment: 9, role: "resident", fee: 100 },
-      { name: "الياس كتوعة", phone: "0521000011", apartment: 11, role: "resident", fee: 0 },
-      { name: "موسى هريمات", phone: "0521000012", apartment: 12, role: "resident", fee: 0 },
+      { name: "كريم السمان", phone: "+972525143581", apartment: 10, role: "admin", fee: 100 },
+      { name: "الياس خوري", phone: "+972521000001", apartment: 1, role: "resident", fee: 0 },
+      { name: "رافع شقور", phone: "+972521000002", apartment: 2, role: "resident", fee: 100 },
+      { name: "نخلة عنتر", phone: "+972521000003", apartment: 3, role: "resident", fee: 100 },
+      { name: "روبير سعادة", phone: "+972521000004", apartment: 4, role: "resident", fee: 100 },
+      { name: "اليكس اريبب", phone: "+972521000005", apartment: 5, role: "resident", fee: 100 },
+      { name: "فكتور حصري", phone: "+972521000006", apartment: 6, role: "resident", fee: 100 },
+      { name: "جورج بافلوف", phone: "+972521000007", apartment: 7, role: "resident", fee: 100 },
+      { name: "طارق بدر", phone: "+972521000008", apartment: 8, role: "resident", fee: 100 },
+      { name: "عبدالله ابوفرحة", phone: "+972521000009", apartment: 9, role: "resident", fee: 100 },
+      { name: "الياس كتوعة", phone: "+972521000011", apartment: 11, role: "resident", fee: 0 },
+      { name: "موسى هريمات", phone: "+972521000012", apartment: 12, role: "resident", fee: 0 },
     ];
 
     // Payment data from image (year 2026, months with ✓100 = paid)
