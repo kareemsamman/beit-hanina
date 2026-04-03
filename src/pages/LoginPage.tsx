@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Building2, Loader2 } from 'lucide-react';
 import { BUILDING_SHORT } from '@/lib/constants';
+import { extractFunctionErrorMessage } from '@/lib/function-errors';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -28,7 +29,7 @@ export default function LoginPage() {
       });
 
       if (fnError) {
-        setError('حدث خطأ في الإرسال');
+        setError(await extractFunctionErrorMessage(fnError, 'حدث خطأ في الإرسال'));
         return;
       }
 
@@ -39,8 +40,8 @@ export default function LoginPage() {
 
       toast.success('تم إرسال رمز التحقق');
       navigate('/verify', { state: { phone: phone.trim() } });
-    } catch {
-      setError('حدث خطأ غير متوقع');
+    } catch (error) {
+      setError(await extractFunctionErrorMessage(error, 'حدث خطأ غير متوقع'));
     } finally {
       setLoading(false);
     }
