@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
       const smsBody = {
         sms: {
-          user: { username: smsUser },
+          user: { username: smsUser, password: smsToken },
           source: smsSource,
           messages: {
             message: [
@@ -92,7 +92,6 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${smsToken}`,
           },
           body: JSON.stringify(smsBody),
         });

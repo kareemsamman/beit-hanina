@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Building2, Loader2 } from 'lucide-react';
+import { Building2, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { OTP_LENGTH, OTP_COUNTDOWN_SECONDS } from '@/lib/constants';
@@ -74,7 +74,14 @@ export default function VerifyPage() {
       });
 
       if (fnError || data?.error) {
-        setError(data?.error || 'خطأ في التحقق');
+        let errorMsg = data?.error || 'خطأ في التحقق';
+        if (!data?.error && fnError) {
+          try {
+            const errBody = await fnError.context?.json?.();
+            if (errBody?.error) errorMsg = errBody.error;
+          } catch {}
+        }
+        setError(errorMsg);
         setLoading(false);
         return;
       }
@@ -117,9 +124,16 @@ export default function VerifyPage() {
       <div className="w-full max-w-sm text-center">
         <Building2 className="h-10 w-10 text-primary mx-auto mb-4" />
         <h1 className="text-xl font-bold mb-2">أدخل رمز التحقق</h1>
-        <p className="text-muted-foreground text-sm mb-8">
+        <p className="text-muted-foreground text-sm mb-2">
           تم إرسال رمز إلى {phone}
         </p>
+        <button
+          onClick={() => navigate('/login', { replace: true })}
+          className="text-primary text-sm mb-6 inline-flex items-center gap-1 hover:underline"
+        >
+          <ArrowRight className="h-3 w-3" />
+          تغيير رقم الهاتف
+        </button>
 
         <div className="flex justify-center gap-2 mb-6" dir="ltr">
           {otp.map((digit, i) => (

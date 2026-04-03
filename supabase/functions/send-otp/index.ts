@@ -78,8 +78,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate 6-digit OTP
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    // Generate 4-digit OTP
+    const otp = String(Math.floor(1000 + Math.random() * 9000));
     const codeHash = await hashOtp(otp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
@@ -98,18 +98,23 @@ Deno.serve(async (req) => {
     // Format phone for SMS (remove + prefix if present)
     const smsPhone = normalized.startsWith("+") ? normalized.slice(1) : normalized;
 
-    // Build XML body per 019SMS API docs
-    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
-<sms>
-    <user>
-        <username>${smsUser}</username>
-    </user>
-    <source>${smsSource}</source>
-    <destinations>
-        <phone>${smsPhone}</phone>
-    </destinations>
-    <message>رمز التحقق الخاص بك: ${otp}</message>
-</sms>`;
+    const smsBody = {
+      sms: {
+        user: { username: smsUser, password: smsToken },
+        source: smsSource,
+        messages: {
+          message: [
+            {
+              id: crypto.randomUUID(),
+              text: `رمز التحقق الخاص بك: ${otp}`,
+              recipients: {
+                recipient: [{ id: "1", phone: smsPhone }],
+              },
+            },
+          ],
+        },
+      },
+    };
 
     let smsStatus = "sent";
     let providerResponse = null;
@@ -118,10 +123,9 @@ Deno.serve(async (req) => {
       const smsRes = await fetch("https://019sms.co.il/api", {
         method: "POST",
         headers: {
-          "Content-Type": "application/xml",
-          Authorization: `Bearer ${smsToken}`,
+          "Content-Type": "application/json",
         },
-        body: xmlBody,
+        body: JSON.stringify(smsBody),
       });
       providerResponse = await smsRes.text();
       if (!smsRes.ok) {
