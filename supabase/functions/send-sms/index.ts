@@ -64,23 +64,21 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < phones.length; i++) {
       const phone = phones[i];
-      const smsPhone = phone.startsWith("+") ? phone.slice(1) : phone;
+      // Convert +972XXXXXXXXX to 0XXXXXXXXX for 019SMS API
+      const smsPhone = phone.startsWith("+972")
+        ? "0" + phone.slice(4)
+        : phone.startsWith("972")
+        ? "0" + phone.slice(3)
+        : phone;
 
       const smsBody = {
         sms: {
-          user: { username: smsUser, password: smsToken },
+          user: { username: smsUser },
           source: smsSource,
-          messages: {
-            message: [
-              {
-                id: crypto.randomUUID(),
-                text: message,
-                recipients: {
-                  recipient: [{ id: "1", phone: smsPhone }],
-                },
-              },
-            ],
+          destinations: {
+            phone: [{ _: smsPhone }],
           },
+          message: message,
         },
       };
 
@@ -92,6 +90,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${smsToken}`,
           },
           body: JSON.stringify(smsBody),
         });
