@@ -102,14 +102,14 @@ Deno.serve(async (req) => {
       sms: {
         user: { username: smsUser },
         source: smsSource,
+        destinations: {
+          phone: [{ id: "1", number: smsPhone }],
+        },
         messages: {
           message: [
             {
               id: crypto.randomUUID(),
               text: `رمز التحقق الخاص بك: ${otp}`,
-              recipients: {
-                recipient: [{ id: "1", phone: smsPhone }],
-              },
             },
           ],
         },
