@@ -5,6 +5,7 @@ import { Building2, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { OTP_LENGTH, OTP_COUNTDOWN_SECONDS } from '@/lib/constants';
+import { extractFunctionErrorMessage } from '@/lib/function-errors';
 
 export default function VerifyPage() {
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -74,13 +75,7 @@ export default function VerifyPage() {
       });
 
       if (fnError || data?.error) {
-        let errorMsg = data?.error || 'خطأ في التحقق';
-        if (!data?.error && fnError) {
-          try {
-            const errBody = await fnError.context?.json?.();
-            if (errBody?.error) errorMsg = errBody.error;
-          } catch {}
-        }
+        const errorMsg = data?.error || await extractFunctionErrorMessage(fnError, 'خطأ في التحقق');
         setError(errorMsg);
         setLoading(false);
         return;
@@ -96,8 +91,8 @@ export default function VerifyPage() {
         const route = data.profile?.role === 'admin' ? '/admin' : '/resident';
         navigate(route, { replace: true });
       }
-    } catch {
-      setError('حدث خطأ غير متوقع');
+    } catch (error) {
+      setError(await extractFunctionErrorMessage(error, 'حدث خطأ غير متوقع'));
     } finally {
       setLoading(false);
     }
@@ -105,15 +100,22 @@ export default function VerifyPage() {
 
   const handleResend = async () => {
     setResending(true);
+    setError('');
     try {
-      await supabase.functions.invoke('send-otp', {
+      const { data, error: fnError } = await supabase.functions.invoke('send-otp', {
         body: { phone },
       });
+
+      if (fnError || data?.error) {
+        setError(data?.error || await extractFunctionErrorMessage(fnError, 'فشل في إعادة الإرسال'));
+        return;
+      }
+
       setCountdown(OTP_COUNTDOWN_SECONDS);
       setOtp(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
-    } catch {
-      setError('فشل في إعادة الإرسال');
+    } catch (error) {
+      setError(await extractFunctionErrorMessage(error, 'فشل في إعادة الإرسال'));
     } finally {
       setResending(false);
     }
