@@ -118,10 +118,10 @@ Deno.serve(async (req) => {
       const smsRes = await fetch("https://019sms.co.il/api", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/xml",
           Authorization: `Bearer ${smsToken}`,
         },
-        body: JSON.stringify(smsBody),
+        body: xmlBody,
       });
       providerResponse = await smsRes.text();
       if (!smsRes.ok) {
