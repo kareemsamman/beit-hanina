@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     const tempPassword = crypto.randomUUID();
 
     // Update the user's password
-    await supabase.auth.admin.updateUser(profile.id, {
+    await supabase.auth.admin.updateUserById(profile.id, {
       password: tempPassword,
     });
 
