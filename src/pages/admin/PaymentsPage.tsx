@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronRight, ChevronLeft, CreditCard, Loader2, Send } from 'lucide-react';
-import { ARABIC_MONTHS, CURRENCY, PAYMENT_STATUS_LABELS } from '@/types';
+import { ARABIC_MONTHS, PAYMENT_STATUS_LABELS } from '@/types';
+import { CURRENCY } from '@/lib/constants';
 import type { MonthlyPayment, PaymentStatus, Profile } from '@/types';
 import { toast } from 'sonner';
 
