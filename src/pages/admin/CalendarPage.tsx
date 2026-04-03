@@ -58,7 +58,7 @@ export default function CalendarPage() {
               onClick={() => navigate('/admin/payments', { state: { month: m, year } })}
             >
               <CardContent className="p-3 text-center">
-                <p className="font-semibold text-sm">{AM[m]}</p>
+                <p className="font-semibold text-sm">{ARABIC_MONTHS[m]}</p>
                 {hasData && (
                   <>
                     <p className="text-xs text-success mt-1">✓ {s.paid}</p>
