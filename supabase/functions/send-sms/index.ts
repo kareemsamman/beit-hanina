@@ -71,16 +71,19 @@ Deno.serve(async (req) => {
         ? "0" + phone.slice(3)
         : phone;
 
-      const smsBody = {
-        sms: {
-          user: { username: smsUser },
-          source: smsSource,
-          destinations: {
-            phone: [{ _: smsPhone }],
-          },
-          message: message,
-        },
-      };
+      const dlr = crypto.randomUUID();
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sms>
+    <user>
+        <username>${smsUser}</username>
+    </user>
+    <source>${smsSource}</source>
+    <destinations>
+        <phone id="${dlr}">${smsPhone}</phone>
+    </destinations>
+    <message>${message}</message>
+</sms>`;
 
       let status = "sent";
       let providerResponse = null;
@@ -89,10 +92,10 @@ Deno.serve(async (req) => {
         const res = await fetch("https://019sms.co.il/api", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${smsToken}`,
+            "Authorization": `Bearer ${smsToken}`,
+            "Content-Type": "application/xml",
           },
-          body: JSON.stringify(smsBody),
+          body: xml,
         });
         providerResponse = await res.text();
         if (!res.ok) status = "failed";
