@@ -116,6 +116,12 @@ Deno.serve(async (req) => {
     const smsToken = Deno.env.get("SMS_API_TOKEN");
     const smsSource = Deno.env.get("SMS_SOURCE_PHONE");
 
+    console.log("DEBUG SMS creds:", {
+      user: smsUser ? `${smsUser.substring(0, 4)}...(${smsUser.length})` : "MISSING",
+      token: smsToken ? `${smsToken.substring(0, 4)}...(${smsToken.length})` : "MISSING",
+      source: smsSource || "MISSING",
+    });
+
     if (!smsUser || !smsToken || !smsSource) {
       return new Response(JSON.stringify({ error: "إعدادات الرسائل النصية غير مكتملة" }), {
         status: 500,
