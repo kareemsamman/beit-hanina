@@ -87,24 +87,27 @@ Deno.serve(async (req) => {
       expires_at: expiresAt,
     });
 
-    // Send SMS via 019SMS
+    // Send SMS via 019SMS using XML format
     const smsUser = Deno.env.get("SMS_API_USER");
     const smsToken = Deno.env.get("SMS_API_TOKEN");
     const smsSource = Deno.env.get("SMS_SOURCE_PHONE");
 
     // Convert +972XXXXXXXXX to 0XXXXXXXXX for 019SMS API
     const smsPhone = normalized.replace("+972", "0");
+    const dlr = crypto.randomUUID();
+    const smsMessage = `رمز التحقق الخاص بك: ${otp}`;
 
-    const smsBody = {
-      sms: {
-        user: { username: smsUser },
-        source: smsSource,
-        destinations: {
-          phone: [{ _: smsPhone }],
-        },
-        message: `رمز التحقق الخاص بك: ${otp}`,
-      },
-    };
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sms>
+    <user>
+        <username>${smsUser}</username>
+    </user>
+    <source>${smsSource}</source>
+    <destinations>
+        <phone id="${dlr}">${smsPhone}</phone>
+    </destinations>
+    <message>${smsMessage}</message>
+</sms>`;
 
     let smsStatus = "sent";
     let providerResponse = null;
@@ -113,10 +116,10 @@ Deno.serve(async (req) => {
       const smsRes = await fetch("https://019sms.co.il/api", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${smsToken}`,
+          "Authorization": `Bearer ${smsToken}`,
+          "Content-Type": "application/xml",
         },
-        body: JSON.stringify(smsBody),
+        body: xml,
       });
       providerResponse = await smsRes.text();
       if (!smsRes.ok) {
@@ -131,7 +134,7 @@ Deno.serve(async (req) => {
     await supabase.from("sms_logs").insert({
       user_id: profile.id,
       phone: normalized,
-      message: `رمز التحقق الخاص بك: ${otp}`,
+      message: smsMessage,
       type: "otp",
       status: smsStatus,
       provider_response: { raw: providerResponse },
