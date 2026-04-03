@@ -14,6 +14,39 @@ async function hashOtp(otp: string): Promise<string> {
     .join("");
 }
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function parseProviderResponse(raw: string | null) {
+  if (!raw) {
+    return { ok: false, status: null, message: null };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as { status?: string | number; message?: string };
+    const status = parsed.status != null ? String(parsed.status) : null;
+    return {
+      ok: status === "0",
+      status,
+      message: parsed.message ?? null,
+    };
+  } catch {
+    const status = raw.match(/<status>([^<]+)<\/status>/i)?.[1] ?? null;
+    const message = raw.match(/<message>([^<]+)<\/message>/i)?.[1] ?? null;
+    return {
+      ok: status === "0",
+      status,
+      message,
+    };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -79,59 +112,91 @@ Deno.serve(async (req) => {
     const codeHash = await hashOtp(otp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-    await supabase.from("otp_codes").insert({
-      phone: normalized,
-      code_hash: codeHash,
-      expires_at: expiresAt,
-    });
-
     const smsUser = Deno.env.get("SMS_API_USER");
     const smsToken = Deno.env.get("SMS_API_TOKEN");
     const smsSource = Deno.env.get("SMS_SOURCE_PHONE");
+
+    if (!smsUser || !smsToken || !smsSource) {
+      return new Response(JSON.stringify({ error: "إعدادات الرسائل النصية غير مكتملة" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: otpRecord, error: otpInsertError } = await supabase
+      .from("otp_codes")
+      .insert({
+        phone: normalized,
+        code_hash: codeHash,
+        expires_at: expiresAt,
+      })
+      .select("id")
+      .single();
+
+    if (otpInsertError) {
+      throw otpInsertError;
+    }
+
     const smsPhone = normalized.startsWith("+") ? normalized.slice(1) : normalized;
+    const smsMessage = `رمز التحقق الخاص بك: ${otp}`;
+    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
+<sms>
+  <user>
+    <username>${escapeXml(smsUser)}</username>
+    <password>${escapeXml(smsToken)}</password>
+  </user>
+  <source>${escapeXml(smsSource)}</source>
+  <destinations>
+    <phone id="1">${escapeXml(smsPhone)}</phone>
+  </destinations>
+  <message>${escapeXml(smsMessage)}</message>
+</sms>`;
 
-    const smsBody = {
-      sms: {
-        user: { username: smsUser, password: smsToken },
-        source: smsSource,
-        messages: {
-          message: [
-            {
-              id: crypto.randomUUID(),
-              text: `رمز التحقق الخاص بك: ${otp}`,
-              recipients: {
-                recipient: [{ id: "1", phone: smsPhone }],
-              },
-            },
-          ],
-        },
-      },
-    };
-
-    let smsStatus = "sent";
-    let providerResponse = null;
+    let smsStatus = "failed";
+    let providerResponse: string | null = null;
+    let providerStatus: string | null = null;
+    let providerMessage: string | null = null;
 
     try {
       const smsRes = await fetch("https://019sms.co.il/api", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(smsBody),
+        headers: { "Content-Type": "application/xml" },
+        body: xmlBody,
       });
       providerResponse = await smsRes.text();
-      if (!smsRes.ok) smsStatus = "failed";
+      const parsedProvider = parseProviderResponse(providerResponse);
+      providerStatus = parsedProvider.status;
+      providerMessage = parsedProvider.message;
+
+      if (smsRes.ok && parsedProvider.ok) {
+        smsStatus = "sent";
+      }
     } catch (e) {
-      smsStatus = "failed";
       providerResponse = String(e);
+      providerMessage = "تعذر الاتصال بمزود الرسائل";
     }
 
     await supabase.from("sms_logs").insert({
       user_id: profile.id,
       phone: normalized,
-      message: `رمز التحقق الخاص بك: ${otp}`,
+      message: smsMessage,
       type: "otp",
       status: smsStatus,
-      provider_response: { raw: providerResponse },
+      provider_response: {
+        raw: providerResponse,
+        status: providerStatus,
+        message: providerMessage,
+      },
     });
+
+    if (smsStatus !== "sent") {
+      await supabase.from("otp_codes").delete().eq("id", otpRecord.id);
+
+      return new Response(
+        JSON.stringify({ error: providerMessage || "تعذر إرسال رمز التحقق" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: "تم إرسال رمز التحقق" }),
