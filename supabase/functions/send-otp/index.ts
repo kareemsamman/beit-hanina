@@ -28,7 +28,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Normalize phone
     let normalized = phone.trim();
     if (normalized.startsWith("0")) {
       normalized = "+972" + normalized.slice(1);
@@ -42,7 +41,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Rate limit: max 3 OTP requests per phone per 10 minutes
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: recentOtps } = await supabase
       .from("otp_codes")
@@ -57,7 +55,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if phone exists in profiles
     const { data: profile } = await supabase
       .from("profiles")
       .select("id, is_active")
@@ -78,40 +75,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate 4-digit OTP
     const otp = String(Math.floor(1000 + Math.random() * 9000));
     const codeHash = await hashOtp(otp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-    // Store OTP
     await supabase.from("otp_codes").insert({
       phone: normalized,
       code_hash: codeHash,
       expires_at: expiresAt,
     });
 
-    // Send SMS via 019SMS
     const smsUser = Deno.env.get("SMS_API_USER");
     const smsToken = Deno.env.get("SMS_API_TOKEN");
     const smsSource = Deno.env.get("SMS_SOURCE_PHONE");
-    console.log("SMS credentials:", { user: smsUser ? `${smsUser.substring(0, 3)}***` : "MISSING", token: smsToken ? `${smsToken.substring(0, 3)}***` : "MISSING", source: smsSource || "MISSING" });
-
-    // Format phone for SMS (remove + prefix if present)
     const smsPhone = normalized.startsWith("+") ? normalized.slice(1) : normalized;
 
-    const msgId = crypto.randomUUID();
-    const xmlBody = `<?xml version="1.0" encoding="UTF-8"?>
-<sms>
-  <user>
-    <username>${smsUser}</username>
-    <password>${smsToken}</password>
-  </user>
-  <source>${smsSource}</source>
-  <destinations>
-    <phone id="1">${smsPhone}</phone>
-  </destinations>
-  <message>رمز التحقق الخاص بك: ${otp}</message>
-</sms>`;
+    const smsBody = {
+      sms: {
+        user: { username: smsUser, password: smsToken },
+        source: smsSource,
+        messages: {
+          message: [
+            {
+              id: crypto.randomUUID(),
+              text: `رمز التحقق الخاص بك: ${otp}`,
+              recipients: {
+                recipient: [{ id: "1", phone: smsPhone }],
+              },
+            },
+          ],
+        },
+      },
+    };
 
     let smsStatus = "sent";
     let providerResponse = null;
@@ -119,21 +114,16 @@ Deno.serve(async (req) => {
     try {
       const smsRes = await fetch("https://019sms.co.il/api", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/xml",
-        },
-        body: xmlBody,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(smsBody),
       });
       providerResponse = await smsRes.text();
-      if (!smsRes.ok) {
-        smsStatus = "failed";
-      }
+      if (!smsRes.ok) smsStatus = "failed";
     } catch (e) {
       smsStatus = "failed";
       providerResponse = String(e);
     }
 
-    // Log SMS
     await supabase.from("sms_logs").insert({
       user_id: profile.id,
       phone: normalized,
