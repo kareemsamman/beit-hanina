@@ -19,19 +19,21 @@ export default function SplashPage() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-6 text-center">
-      <div className="mb-8 rounded-full bg-primary/10 p-6">
-        <Building2 className="h-16 w-16 text-primary" />
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-primary/5 to-background px-6 text-center">
+      <div className="animate-fade-in">
+        <div className="mb-6 rounded-3xl bg-primary/10 p-8 shadow-lg shadow-primary/5">
+          <Building2 className="h-20 w-20 text-primary" />
+        </div>
+        <h1 className="text-3xl font-bold text-foreground mb-2">{BUILDING_NAME}</h1>
+        <p className="text-muted-foreground text-lg mb-16">{SYSTEM_NAME}</p>
+        <Button
+          size="lg"
+          className="w-full max-w-sm h-14 text-lg rounded-2xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-transform"
+          onClick={() => navigate('/login')}
+        >
+          تسجيل الدخول
+        </Button>
       </div>
-      <h1 className="text-2xl font-bold text-foreground mb-2">{BUILDING_NAME}</h1>
-      <p className="text-muted-foreground text-lg mb-12">{SYSTEM_NAME}</p>
-      <Button
-        size="lg"
-        className="w-full max-w-sm h-14 text-lg rounded-xl"
-        onClick={() => navigate('/login')}
-      >
-        تسجيل الدخول
-      </Button>
     </div>
   );
 }
