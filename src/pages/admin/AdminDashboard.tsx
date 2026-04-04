@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, CreditCard, Wrench, MessageSquare, UserPlus, CalendarPlus, Loader2, Building2, ChevronLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, CreditCard, Wrench, MessageSquare, UserPlus, CalendarPlus, Loader2, Building2, ChevronLeft, CheckCircle2, XCircle, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BUILDING_NAME, BUILDING_SHORT, CURRENCY } from '@/lib/constants';
 import { ARABIC_MONTHS } from '@/types';
@@ -79,6 +79,7 @@ export default function AdminDashboard() {
     { label: 'تسجيل دفعة', icon: CreditCard, onClick: () => navigate('/admin/payments'), bg: 'from-emerald-500 to-emerald-600', iconBg: 'bg-white/20' },
     { label: 'الطلبات', icon: Wrench, onClick: () => navigate('/admin/requests'), bg: 'from-amber-500 to-amber-600', iconBg: 'bg-white/20' },
     { label: 'إرسال رسالة', icon: MessageSquare, onClick: () => navigate('/admin/sms'), bg: 'from-violet-500 to-violet-600', iconBg: 'bg-white/20' },
+    { label: 'التقويم', icon: Calendar, onClick: () => navigate('/admin/calendar'), bg: 'from-rose-500 to-rose-600', iconBg: 'bg-white/20' },
   ];
 
   return (
@@ -200,12 +201,12 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <h2 className="text-base font-bold mb-3">إجراءات سريعة</h2>
-        <div className="grid grid-cols-4 gap-2.5 mb-5 animate-stagger">
+        <div className="flex flex-wrap gap-2.5 mb-5 animate-stagger">
           {quickActions.map((action, i) => (
             <button
               key={i}
               onClick={action.onClick}
-              className={`bg-gradient-to-b ${action.bg} rounded-2xl p-3 flex flex-col items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.93] transition-all duration-200 h-[88px]`}
+              className={`bg-gradient-to-b ${action.bg} rounded-2xl p-3 flex flex-col items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.93] transition-all duration-200 h-[88px] flex-1 min-w-[72px]`}
             >
               <div className={`${action.iconBg} rounded-xl p-2`}>
                 <action.icon className="h-5 w-5 text-white" />
