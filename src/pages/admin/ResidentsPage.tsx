@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Users, Search, Plus, Loader2, Phone, Home as HomeIcon } from 'lucide-react';
+import { Users, Search, Plus, Loader2, Phone, Home as HomeIcon, Pencil } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -22,6 +22,9 @@ export default function ResidentsPage() {
   const [selected, setSelected] = useState<Profile | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', apartment_number: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', apartment_number: '', notes: '' });
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { fetchResidents(); }, []);
 
@@ -79,6 +82,36 @@ export default function ResidentsPage() {
     toast.success(resident.is_active ? 'تم تعطيل الحساب' : 'تم تفعيل الحساب');
     fetchResidents();
     setDetailOpen(false);
+  };
+
+  const startEdit = () => {
+    if (!selected) return;
+    setEditForm({
+      name: selected.name,
+      phone: selected.phone,
+      apartment_number: String(selected.apartment_number),
+      notes: selected.notes || '',
+    });
+    setEditing(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!selected || !editForm.name || !editForm.phone || !editForm.apartment_number) {
+      toast.error('جميع الحقول مطلوبة');
+      return;
+    }
+    setEditSaving(true);
+    await supabase.from('profiles').update({
+      name: editForm.name,
+      phone: editForm.phone,
+      apartment_number: parseInt(editForm.apartment_number),
+      notes: editForm.notes || null,
+    }).eq('id', selected.id);
+    toast.success('تم تحديث بيانات الساكن');
+    setEditSaving(false);
+    setEditing(false);
+    setDetailOpen(false);
+    fetchResidents();
   };
 
   return (
@@ -160,9 +193,9 @@ export default function ResidentsPage() {
       </Sheet>
 
       {/* Detail Sheet */}
-      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
-          {selected && (
+      <Sheet open={detailOpen} onOpenChange={(open) => { setDetailOpen(open); if (!open) setEditing(false); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+          {selected && !editing && (
             <div className="py-4 space-y-5">
               <div className="flex items-center gap-4">
                 <div className="bg-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center">
@@ -181,13 +214,52 @@ export default function ResidentsPage() {
                 <div className="flex items-center gap-2"><HomeIcon className="h-4 w-4 text-muted-foreground" /><span className="text-sm">شقة {selected.apartment_number}</span></div>
                 {selected.notes && <p className="text-sm text-muted-foreground pt-1 border-t">{selected.notes}</p>}
               </div>
-              <Button
-                variant={selected.is_active ? 'destructive' : 'default'}
-                className="w-full h-12 rounded-xl"
-                onClick={() => toggleActive(selected)}
-              >
-                {selected.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 rounded-xl gap-2"
+                  onClick={startEdit}
+                >
+                  <Pencil className="h-4 w-4" />
+                  تعديل البيانات
+                </Button>
+                <Button
+                  variant={selected.is_active ? 'destructive' : 'default'}
+                  className="flex-1 h-12 rounded-xl"
+                  onClick={() => toggleActive(selected)}
+                >
+                  {selected.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+                </Button>
+              </div>
+            </div>
+          )}
+          {selected && editing && (
+            <div className="py-4 space-y-4">
+              <SheetHeader><SheetTitle>تعديل بيانات {selected.name}</SheetTitle></SheetHeader>
+              <div>
+                <Label className="text-sm font-medium">الاسم الكامل</Label>
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="h-12 mt-1.5 rounded-xl" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">رقم الهاتف</Label>
+                <Input type="tel" dir="ltr" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="h-12 mt-1.5 rounded-xl" inputMode="numeric" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">رقم الشقة</Label>
+                <Input type="number" value={editForm.apartment_number} onChange={(e) => setEditForm({ ...editForm, apartment_number: e.target.value })} className="h-12 mt-1.5 rounded-xl" inputMode="numeric" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">ملاحظات (اختياري)</Label>
+                <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="mt-1.5 rounded-xl" />
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12 rounded-xl" onClick={() => setEditing(false)}>
+                  إلغاء
+                </Button>
+                <Button className="flex-1 h-12 rounded-xl" onClick={handleEditSave} disabled={editSaving}>
+                  {editSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
+                </Button>
+              </div>
             </div>
           )}
         </SheetContent>
