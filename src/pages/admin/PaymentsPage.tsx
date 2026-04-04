@@ -86,22 +86,20 @@ export default function PaymentsPage() {
     const unpaid = payments.filter((p) => p.status === 'unpaid' || p.status === 'partial');
     if (unpaid.length === 0) { toast.info('لا يوجد غير دافعين'); return; }
 
-    const phones = [];
-    const userIds = [];
     for (const p of unpaid) {
-      const { data: profile } = await supabase.from('profiles').select('phone, id').eq('id', p.user_id).single();
-      if (profile) { phones.push(profile.phone); userIds.push(profile.id); }
+      const { data: profile } = await supabase.from('profiles').select('phone, id, name').eq('id', p.user_id).single();
+      if (profile) {
+        await supabase.functions.invoke('send-sms', {
+          body: {
+            phones: [profile.phone],
+            user_ids: [profile.id],
+            message: `مرحبا ${profile.name}\nعمارة رقم 5 — طريق حزما زقاق ٧ - ٥\nتذكير: لم يتم دفع خدمات العمارة لشهر ${ARABIC_MONTHS[month]} ${year}. يرجى الدفع في أقرب وقت.`,
+            type: 'reminder',
+          },
+        });
+      }
     }
-
-    await supabase.functions.invoke('send-sms', {
-      body: {
-        phones,
-        user_ids: userIds,
-        message: `تذكير: لم يتم دفع اشتراك شهر ${ARABIC_MONTHS[month]} ${year}. يرجى الدفع في أقرب وقت.`,
-        type: 'reminder',
-      },
-    });
-    toast.success(`تم إرسال تذكير لـ ${phones.length} ساكن`);
+    toast.success(`تم إرسال تذكير لـ ${unpaid.length} ساكن`);
   };
 
   const filters = [

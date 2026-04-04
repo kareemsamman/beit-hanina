@@ -58,7 +58,7 @@ export default function SmsPage() {
       phone: p.profiles.phone,
     })) || [];
     setUnpaidResidents(list);
-    setReminderMsg(`تذكير: لم يتم دفع اشتراك شهر ${ARABIC_MONTHS[rMonth]} ${rYear}. يرجى الدفع.`);
+    setReminderMsg(`عمارة رقم 5 — طريق حزما زقاق ٧ - ٥\nتذكير: لم يتم دفع خدمات العمارة لشهر ${ARABIC_MONTHS[rMonth]} ${rYear}. يرجى الدفع.`);
   };
 
   useEffect(() => { fetchUnpaid(); }, [rMonth, rYear]);
@@ -97,14 +97,17 @@ export default function SmsPage() {
   const handleSendReminder = async () => {
     if (unpaidResidents.length === 0) { toast.info('لا يوجد غير دافعين'); return; }
     setSending(true);
-    await supabase.functions.invoke('send-sms', {
-      body: {
-        phones: unpaidResidents.map((r) => r.phone),
-        user_ids: unpaidResidents.map((r) => r.id),
-        message: reminderMsg,
-        type: 'reminder',
-      },
-    });
+    for (const r of unpaidResidents) {
+      const personalMsg = `مرحبا ${r.name}\n${reminderMsg}`;
+      await supabase.functions.invoke('send-sms', {
+        body: {
+          phones: [r.phone],
+          user_ids: [r.id],
+          message: personalMsg,
+          type: 'reminder',
+        },
+      });
+    }
     toast.success(`تم إرسال تذكير لـ ${unpaidResidents.length} ساكن`);
     setSending(false);
     fetchLogs();
