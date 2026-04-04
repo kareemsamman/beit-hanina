@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronRight, ChevronLeft, CreditCard, Loader2, Send } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CreditCard, Loader2, Send, TrendingUp, CheckCircle2, XCircle, CircleDot } from 'lucide-react';
 import { ARABIC_MONTHS, PAYMENT_STATUS_LABELS } from '@/types';
 import { CURRENCY } from '@/lib/constants';
 import type { MonthlyPayment, PaymentStatus, Profile } from '@/types';
@@ -46,6 +46,7 @@ export default function PaymentsPage() {
   const unpaidCount = payments.filter((p) => p.status === 'unpaid').length;
   const partialCount = payments.filter((p) => p.status === 'partial').length;
   const totalCollected = payments.filter((p) => p.status === 'paid').reduce((s, p) => s + Number(p.amount), 0);
+  const paidPercent = payments.length > 0 ? Math.round((paidCount / payments.length) * 100) : 0;
 
   const prevMonth = () => {
     if (month === 1) { setMonth(12); setYear(year - 1); }
@@ -103,10 +104,10 @@ export default function PaymentsPage() {
   };
 
   const filters = [
-    { key: 'all', label: 'الكل', count: payments.length },
-    { key: 'paid', label: 'دفع', count: paidCount },
-    { key: 'unpaid', label: 'لم يدفع', count: unpaidCount },
-    { key: 'partial', label: 'جزئي', count: partialCount },
+    { key: 'all', label: 'الكل', count: payments.length, icon: null },
+    { key: 'paid', label: 'دفع', count: paidCount, icon: CheckCircle2 },
+    { key: 'unpaid', label: 'لم يدفع', count: unpaidCount, icon: XCircle },
+    { key: 'partial', label: 'جزئي', count: partialCount, icon: CircleDot },
   ];
 
   return (
@@ -114,53 +115,74 @@ export default function PaymentsPage() {
       <h1 className="text-xl font-bold mb-4">الدفعات الشهرية</h1>
 
       {/* Month selector */}
-      <div className="flex items-center justify-between bg-card rounded-2xl p-3 mb-4 border-0 shadow-sm">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={prevMonth}><ChevronRight className="h-5 w-5" /></Button>
+      <div className="flex items-center justify-between bg-card rounded-2xl p-3 mb-5 shadow-sm animate-scale-in">
+        <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10" onClick={prevMonth}><ChevronRight className="h-5 w-5" /></Button>
         <span className="font-bold text-lg">{ARABIC_MONTHS[month]} {year}</span>
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={nextMonth}><ChevronLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10" onClick={nextMonth}><ChevronLeft className="h-5 w-5" /></Button>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <Card className="border-0 shadow-sm bg-gradient-to-l from-green-50 to-card">
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-success">{paidCount}</p>
-            <p className="text-xs text-muted-foreground">دفعوا</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm bg-gradient-to-l from-red-50 to-card">
-          <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-destructive">{unpaidCount}</p>
-            <p className="text-xs text-muted-foreground">لم يدفعوا</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="bg-card rounded-xl p-3 mb-4 shadow-sm flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">إجمالي المحصّل</span>
-        <span className="font-bold text-lg">{totalCollected} {CURRENCY}</span>
-      </div>
+      {/* Progress card */}
+      <Card className="border-0 shadow-sm mb-5 overflow-hidden animate-slide-up">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm text-muted-foreground">نسبة التحصيل</p>
+              <p className="text-3xl font-bold animate-count-up">{paidPercent}%</p>
+            </div>
+            <div className="text-left">
+              <p className="text-sm text-muted-foreground">المحصّل</p>
+              <p className="text-xl font-bold">{totalCollected} <span className="text-sm text-muted-foreground">{CURRENCY}</span></p>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-l from-green-400 to-green-500 rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${paidPercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              <span className="text-muted-foreground">دفعوا ({paidCount})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
+              <span className="text-muted-foreground">لم يدفعوا ({unpaidCount})</span>
+            </div>
+            {partialCount > 0 && (
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-warning" />
+                <span className="text-muted-foreground">جزئي ({partialCount})</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
         {filters.map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
               filter === f.key
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-card text-muted-foreground border border-border/50 hover:bg-accent'
+                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-105'
+                : 'bg-card text-muted-foreground shadow-sm hover:shadow-md active:scale-95'
             }`}
           >
-            {f.label} ({f.count})
+            {f.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+              filter === f.key ? 'bg-white/20' : 'bg-muted'
+            }`}>{f.count}</span>
           </button>
         ))}
       </div>
 
       {/* Reminder button */}
       {unpaidCount > 0 && (
-        <Button variant="outline" className="w-full mb-4 rounded-xl border-dashed border-2" onClick={handleReminder}>
+        <Button variant="outline" className="w-full mb-4 rounded-xl border-dashed border-2 h-11 animate-slide-up" onClick={handleReminder}>
           <Send className="h-4 w-4 ml-2" />
           إرسال تذكير لغير الدافعين ({unpaidCount})
         </Button>
@@ -171,54 +193,72 @@ export default function PaymentsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={<CreditCard className="h-12 w-12" />} message="لا توجد دفعات" />
       ) : (
-        <div className="space-y-2">
-          {filtered.map((p) => (
-            <Card key={p.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition-all" onClick={() => openEdit(p)}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted rounded-xl h-11 w-11 flex items-center justify-center">
-                    <span className="font-bold text-sm">{(p as any).profiles?.apartment_number}</span>
+        <div className="space-y-2 animate-stagger">
+          {filtered.map((p) => {
+            const statusBorder = p.status === 'paid' ? 'border-r-green-500' : p.status === 'unpaid' ? 'border-r-destructive' : 'border-r-warning';
+            return (
+              <Card key={p.id} className={`border-0 border-r-[3px] ${statusBorder} shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98] transition-all duration-200`} onClick={() => openEdit(p)}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`rounded-xl h-11 w-11 flex items-center justify-center ${
+                      p.status === 'paid' ? 'bg-green-50 text-green-700' : p.status === 'unpaid' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      <span className="font-bold text-sm">{(p as any).profiles?.apartment_number}</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{(p as any).profiles?.name}</p>
+                      <p className="text-sm text-muted-foreground">{p.amount} {CURRENCY}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold">{(p as any).profiles?.name}</p>
-                    <p className="text-sm text-muted-foreground">{p.amount} {CURRENCY}</p>
-                  </div>
-                </div>
-                <StatusPill status={p.status} />
-              </CardContent>
-            </Card>
-          ))}
+                  <StatusPill status={p.status} />
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
       {/* Edit Sheet */}
       <Sheet open={editOpen} onOpenChange={setEditOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[80vh] overflow-y-auto">
-          <SheetHeader><SheetTitle>تعديل الدفعة</SheetTitle></SheetHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="text-sm font-medium">الحالة</Label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
-                <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="paid">مدفوع</SelectItem>
-                  <SelectItem value="unpaid">غير مدفوع</SelectItem>
-                  <SelectItem value="partial">دفع جزئي</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">المبلغ</Label>
-              <Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="h-12 mt-1.5 rounded-xl" dir="ltr" />
-            </div>
-            <div>
-              <Label className="text-sm font-medium">ملاحظات</Label>
-              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="mt-1.5 rounded-xl" />
-            </div>
-            <Button className="w-full h-12 rounded-xl" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
-            </Button>
-          </div>
+          {selected && (
+            <>
+              <SheetHeader><SheetTitle>تعديل الدفعة</SheetTitle></SheetHeader>
+              <div className="space-y-4 py-4">
+                <div className="bg-muted/50 rounded-xl p-4 flex items-center gap-3">
+                  <div className="bg-primary/10 rounded-xl h-12 w-12 flex items-center justify-center">
+                    <span className="text-primary font-bold">{(selected as any).profiles?.apartment_number}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{(selected as any).profiles?.name}</p>
+                    <p className="text-sm text-muted-foreground">شقة {(selected as any).profiles?.apartment_number}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">الحالة</Label>
+                  <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                    <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paid">مدفوع</SelectItem>
+                      <SelectItem value="unpaid">غير مدفوع</SelectItem>
+                      <SelectItem value="partial">دفع جزئي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">المبلغ</Label>
+                  <Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="h-12 mt-1.5 rounded-xl" dir="ltr" />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">ملاحظات</Label>
+                  <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="mt-1.5 rounded-xl" />
+                </div>
+                <Button className="w-full h-12 rounded-xl shadow-md shadow-primary/20" onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
+                </Button>
+              </div>
+            </>
+          )}
         </SheetContent>
       </Sheet>
     </div>
