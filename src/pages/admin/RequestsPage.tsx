@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Wrench, Loader2, Clock, Plus } from 'lucide-react';
+import { Wrench, Loader2, Clock, Plus, Trash2 } from 'lucide-react';
 import { REQUEST_TYPE_LABELS, REQUEST_STATUS_LABELS } from '@/types';
 import type { MaintenanceRequest, Profile, RequestStatus, RequestType } from '@/types';
 import { toast } from 'sonner';
@@ -24,6 +24,9 @@ export default function RequestsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+  const [editType, setEditType] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [residents, setResidents] = useState<Profile[]>([]);
   const [newForm, setNewForm] = useState({ user_id: '', type: '' as string, description: '' });
@@ -52,6 +55,8 @@ export default function RequestsPage() {
     setEditStatus(r.status);
     setRejectionReason(r.rejection_reason || '');
     setAdminNote(r.admin_note || '');
+    setEditDescription(r.description);
+    setEditType(r.type);
     setDetailOpen(true);
   };
 
@@ -64,11 +69,23 @@ export default function RequestsPage() {
     setSaving(true);
     await supabase.from('maintenance_requests').update({
       status: editStatus,
+      type: editType,
+      description: editDescription,
       rejection_reason: editStatus === 'rejected' ? rejectionReason : null,
       admin_note: adminNote || null,
     }).eq('id', selected.id);
     toast.success('تم تحديث الطلب');
     setSaving(false);
+    setDetailOpen(false);
+    fetchRequests();
+  };
+
+  const handleDelete = async () => {
+    if (!selected) return;
+    setDeleting(true);
+    await supabase.from('maintenance_requests').delete().eq('id', selected.id);
+    toast.success('تم حذف الطلب');
+    setDeleting(false);
     setDetailOpen(false);
     fetchRequests();
   };
@@ -198,19 +215,24 @@ export default function RequestsPage() {
             <>
               <SheetHeader><SheetTitle>تفاصيل الطلب</SheetTitle></SheetHeader>
               <div className="space-y-4 py-4">
-                <div className="bg-muted/50 rounded-xl p-4 space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">مقدم الطلب</p>
-                    <p className="font-semibold">{(selected as any).profiles?.name} — شقة {(selected as any).profiles?.apartment_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">النوع</p>
-                    <p className="text-sm">{REQUEST_TYPE_LABELS[selected.type]}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">الوصف</p>
-                    <p className="text-sm">{selected.description}</p>
-                  </div>
+                <div className="bg-muted/50 rounded-xl p-4">
+                  <p className="text-xs text-muted-foreground">مقدم الطلب</p>
+                  <p className="font-semibold">{(selected as any).profiles?.name} — شقة {(selected as any).profiles?.apartment_number}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">نوع الطلب</Label>
+                  <Select value={editType} onValueChange={setEditType}>
+                    <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(REQUEST_TYPE_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">الوصف</Label>
+                  <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="mt-1.5 rounded-xl" rows={3} />
                 </div>
                 <div>
                   <Label className="text-sm font-medium">الحالة</Label>
@@ -236,6 +258,9 @@ export default function RequestsPage() {
                 </div>
                 <Button className="w-full h-12 rounded-xl" onClick={handleSave} disabled={saving}>
                   {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
+                </Button>
+                <Button variant="outline" className="w-full h-12 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Trash2 className="h-4 w-4 ml-2" />حذف الطلب</>}
                 </Button>
               </div>
             </>
