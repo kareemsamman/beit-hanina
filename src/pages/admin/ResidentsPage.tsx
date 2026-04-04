@@ -82,16 +82,19 @@ export default function ResidentsPage() {
   };
 
   return (
-    <div className="p-4 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold mb-4">إدارة السكان</h1>
+    <div className="p-4 max-w-lg mx-auto animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold">إدارة السكان</h1>
+        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">{residents.length} ساكن</span>
+      </div>
 
       <div className="relative mb-4">
-        <Search className="absolute right-3 top-3 h-5 w-5 text-muted-foreground" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <Input
           placeholder="بحث بالاسم أو الهاتف أو الشقة"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pr-10 h-12 rounded-xl"
+          className="pr-10 h-12 rounded-xl border-2 focus:border-primary transition-colors"
         />
       </div>
 
@@ -100,20 +103,20 @@ export default function ResidentsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Users className="h-12 w-12" />} message="لا يوجد سكان" />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filtered.map((r) => (
-            <Card key={r.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setSelected(r); setDetailOpen(true); }}>
+            <Card key={r.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition-all" onClick={() => { setSelected(r); setDetailOpen(true); }}>
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 rounded-full p-2">
-                    <HomeIcon className="h-5 w-5 text-primary" />
+                  <div className="bg-primary/10 rounded-xl h-11 w-11 flex items-center justify-center">
+                    <span className="text-primary font-bold">{r.apartment_number}</span>
                   </div>
                   <div>
                     <p className="font-semibold">{r.name}</p>
-                    <p className="text-sm text-muted-foreground">شقة {r.apartment_number} • {formatPhoneDisplay(r.phone)}</p>
+                    <p className="text-sm text-muted-foreground" dir="ltr">{formatPhoneDisplay(r.phone)}</p>
                   </div>
                 </div>
-                <StatusPill status={r.is_active ? 'paid' : 'unpaid'} className={r.is_active ? '' : ''} />
+                <div className={`h-2.5 w-2.5 rounded-full ${r.is_active ? 'bg-success' : 'bg-destructive'}`} />
               </CardContent>
             </Card>
           ))}
@@ -122,7 +125,7 @@ export default function ResidentsPage() {
 
       {/* FAB */}
       <Button
-        className="fixed bottom-20 left-4 h-14 w-14 rounded-full shadow-lg z-40"
+        className="fixed bottom-20 left-4 h-14 w-14 rounded-2xl shadow-lg shadow-primary/25 z-40"
         onClick={() => setAddOpen(true)}
       >
         <Plus className="h-6 w-6" />
@@ -130,26 +133,26 @@ export default function ResidentsPage() {
 
       {/* Add Sheet */}
       <Sheet open={addOpen} onOpenChange={setAddOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[80vh] overflow-y-auto">
           <SheetHeader><SheetTitle>إضافة ساكن جديد</SheetTitle></SheetHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>الاسم الكامل</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 mt-1" />
+              <Label className="text-sm font-medium">الاسم الكامل</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 mt-1.5 rounded-xl" />
             </div>
             <div>
-              <Label>رقم الهاتف</Label>
-              <Input type="tel" dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 mt-1" inputMode="numeric" />
+              <Label className="text-sm font-medium">رقم الهاتف</Label>
+              <Input type="tel" dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 mt-1.5 rounded-xl" inputMode="numeric" placeholder="05X XXX XXXX" />
             </div>
             <div>
-              <Label>رقم الشقة</Label>
-              <Input type="number" value={form.apartment_number} onChange={(e) => setForm({ ...form, apartment_number: e.target.value })} className="h-12 mt-1" inputMode="numeric" />
+              <Label className="text-sm font-medium">رقم الشقة</Label>
+              <Input type="number" value={form.apartment_number} onChange={(e) => setForm({ ...form, apartment_number: e.target.value })} className="h-12 mt-1.5 rounded-xl" inputMode="numeric" />
             </div>
             <div>
-              <Label>ملاحظات (اختياري)</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1" />
+              <Label className="text-sm font-medium">ملاحظات (اختياري)</Label>
+              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1.5 rounded-xl" />
             </div>
-            <Button className="w-full h-12" onClick={handleAdd} disabled={submitting}>
+            <Button className="w-full h-12 rounded-xl" onClick={handleAdd} disabled={submitting}>
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'إضافة'}
             </Button>
           </div>
@@ -158,18 +161,29 @@ export default function ResidentsPage() {
 
       {/* Detail Sheet */}
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetContent side="bottom" className="rounded-t-3xl">
           {selected && (
-            <div className="py-4 space-y-4">
-              <SheetHeader><SheetTitle>{selected.name}</SheetTitle></SheetHeader>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><span dir="ltr">{formatPhoneDisplay(selected.phone)}</span></div>
-                <div className="flex items-center gap-2"><HomeIcon className="h-4 w-4 text-muted-foreground" /><span>شقة {selected.apartment_number}</span></div>
-                {selected.notes && <p className="text-sm text-muted-foreground">{selected.notes}</p>}
+            <div className="py-4 space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="bg-primary/10 rounded-2xl h-16 w-16 flex items-center justify-center">
+                  <span className="text-primary text-2xl font-bold">{selected.apartment_number}</span>
+                </div>
+                <div>
+                  <SheetTitle className="text-right">{selected.name}</SheetTitle>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className={`h-2 w-2 rounded-full ${selected.is_active ? 'bg-success' : 'bg-destructive'}`} />
+                    <span className="text-sm text-muted-foreground">{selected.is_active ? 'نشط' : 'معطّل'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><span dir="ltr" className="text-sm">{formatPhoneDisplay(selected.phone)}</span></div>
+                <div className="flex items-center gap-2"><HomeIcon className="h-4 w-4 text-muted-foreground" /><span className="text-sm">شقة {selected.apartment_number}</span></div>
+                {selected.notes && <p className="text-sm text-muted-foreground pt-1 border-t">{selected.notes}</p>}
               </div>
               <Button
                 variant={selected.is_active ? 'destructive' : 'default'}
-                className="w-full h-12"
+                className="w-full h-12 rounded-xl"
                 onClick={() => toggleActive(selected)}
               >
                 {selected.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}

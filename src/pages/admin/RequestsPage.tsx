@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Wrench, Loader2 } from 'lucide-react';
+import { Wrench, Loader2, Clock } from 'lucide-react';
 import { REQUEST_TYPE_LABELS, REQUEST_STATUS_LABELS } from '@/types';
 import type { MaintenanceRequest, Profile, RequestStatus } from '@/types';
 import { toast } from 'sonner';
@@ -68,8 +68,11 @@ export default function RequestsPage() {
   }
 
   return (
-    <div className="p-4 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold mb-4">إدارة الطلبات</h1>
+    <div className="p-4 max-w-lg mx-auto animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold">إدارة الطلبات</h1>
+        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">{requests.length} طلب</span>
+      </div>
 
       {requests.length === 0 ? (
         <EmptyState icon={<Wrench className="h-12 w-12" />} message="لا توجد طلبات" />
@@ -83,17 +86,24 @@ export default function RequestsPage() {
                 <StatusPill status={status} />
                 <span className="text-sm text-muted-foreground">({group.length})</span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {group.map((r) => (
-                  <Card key={r.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openDetail(r)}>
+                  <Card key={r.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition-all" onClick={() => openDetail(r)}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">{(r as any).profiles?.name}</span>
-                        <span className="text-xs text-muted-foreground">شقة {(r as any).profiles?.apartment_number}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="bg-muted rounded-lg h-9 w-9 flex items-center justify-center">
+                            <span className="font-bold text-xs">{(r as any).profiles?.apartment_number}</span>
+                          </div>
+                          <span className="font-semibold">{(r as any).profiles?.name}</span>
+                        </div>
+                        <span className="text-xs bg-muted px-2 py-1 rounded-lg">{REQUEST_TYPE_LABELS[r.type]}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-1">{REQUEST_TYPE_LABELS[r.type]}</p>
-                      <p className="text-sm line-clamp-2">{r.description}</p>
-                      <p className="text-xs text-muted-foreground mt-2">{dayjs(r.created_at).format('YYYY/MM/DD')}</p>
+                      <p className="text-sm line-clamp-2 text-muted-foreground">{r.description}</p>
+                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {dayjs(r.created_at).format('YYYY/MM/DD')}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -104,27 +114,29 @@ export default function RequestsPage() {
       )}
 
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
           {selected && (
             <>
               <SheetHeader><SheetTitle>تفاصيل الطلب</SheetTitle></SheetHeader>
               <div className="space-y-4 py-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">مقدم الطلب</p>
-                  <p className="font-semibold">{(selected as any).profiles?.name} — شقة {(selected as any).profiles?.apartment_number}</p>
+                <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">مقدم الطلب</p>
+                    <p className="font-semibold">{(selected as any).profiles?.name} — شقة {(selected as any).profiles?.apartment_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">النوع</p>
+                    <p className="text-sm">{REQUEST_TYPE_LABELS[selected.type]}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">الوصف</p>
+                    <p className="text-sm">{selected.description}</p>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">النوع</p>
-                  <p>{REQUEST_TYPE_LABELS[selected.type]}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">الوصف</p>
-                  <p>{selected.description}</p>
-                </div>
-                <div>
-                  <Label>الحالة</Label>
+                  <Label className="text-sm font-medium">الحالة</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger className="h-12 mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="new">جديد</SelectItem>
                       <SelectItem value="in_progress">قيد العمل</SelectItem>
@@ -135,15 +147,15 @@ export default function RequestsPage() {
                 </div>
                 {editStatus === 'rejected' && (
                   <div>
-                    <Label>سبب الرفض (مطلوب)</Label>
-                    <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} className="mt-1" />
+                    <Label className="text-sm font-medium">سبب الرفض (مطلوب)</Label>
+                    <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} className="mt-1.5 rounded-xl" />
                   </div>
                 )}
                 <div>
-                  <Label>ملاحظة المسؤول</Label>
-                  <Textarea value={adminNote} onChange={(e) => setAdminNote(e.target.value)} className="mt-1" />
+                  <Label className="text-sm font-medium">ملاحظة المسؤول</Label>
+                  <Textarea value={adminNote} onChange={(e) => setAdminNote(e.target.value)} className="mt-1.5 rounded-xl" />
                 </div>
-                <Button className="w-full h-12" onClick={handleSave} disabled={saving}>
+                <Button className="w-full h-12 rounded-xl" onClick={handleSave} disabled={saving}>
                   {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
                 </Button>
               </div>

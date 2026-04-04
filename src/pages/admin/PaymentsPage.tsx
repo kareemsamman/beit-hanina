@@ -103,78 +103,86 @@ export default function PaymentsPage() {
   };
 
   const filters = [
-    { key: 'all', label: 'الكل' },
-    { key: 'paid', label: 'دفع' },
-    { key: 'unpaid', label: 'لم يدفع' },
-    { key: 'partial', label: 'جزئي' },
+    { key: 'all', label: 'الكل', count: payments.length },
+    { key: 'paid', label: 'دفع', count: paidCount },
+    { key: 'unpaid', label: 'لم يدفع', count: unpaidCount },
+    { key: 'partial', label: 'جزئي', count: partialCount },
   ];
 
   return (
-    <div className="p-4 max-w-lg mx-auto">
+    <div className="p-4 max-w-lg mx-auto animate-fade-in">
       <h1 className="text-xl font-bold mb-4">الدفعات الشهرية</h1>
 
       {/* Month selector */}
-      <div className="flex items-center justify-between bg-card rounded-xl p-3 mb-4 border">
-        <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="h-5 w-5" /></Button>
-        <span className="font-semibold text-lg">{ARABIC_MONTHS[month]} {year}</span>
-        <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="h-5 w-5" /></Button>
+      <div className="flex items-center justify-between bg-card rounded-2xl p-3 mb-4 border-0 shadow-sm">
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={nextMonth}><ChevronRight className="h-5 w-5" /></Button>
+        <span className="font-bold text-lg">{ARABIC_MONTHS[month]} {year}</span>
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={prevMonth}><ChevronLeft className="h-5 w-5" /></Button>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-4 gap-2 mb-4 text-center">
-        <div className="bg-card rounded-lg p-2 border">
-          <p className="text-lg font-bold">{payments.length}</p>
-          <p className="text-xs text-muted-foreground">الكل</p>
-        </div>
-        <div className="bg-card rounded-lg p-2 border">
-          <p className="text-lg font-bold text-success">{paidCount}</p>
-          <p className="text-xs text-muted-foreground">دفع</p>
-        </div>
-        <div className="bg-card rounded-lg p-2 border">
-          <p className="text-lg font-bold text-destructive">{unpaidCount}</p>
-          <p className="text-xs text-muted-foreground">لم يدفع</p>
-        </div>
-        <div className="bg-card rounded-lg p-2 border">
-          <p className="text-lg font-bold text-warning">{partialCount}</p>
-          <p className="text-xs text-muted-foreground">جزئي</p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Card className="border-0 shadow-sm bg-gradient-to-l from-green-50 to-card">
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold text-success">{paidCount}</p>
+            <p className="text-xs text-muted-foreground">دفعوا</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm bg-gradient-to-l from-red-50 to-card">
+          <CardContent className="p-3 text-center">
+            <p className="text-2xl font-bold text-destructive">{unpaidCount}</p>
+            <p className="text-xs text-muted-foreground">لم يدفعوا</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <p className="text-sm text-muted-foreground mb-4">إجمالي المحصّل: {totalCollected} {CURRENCY}</p>
+      <div className="bg-card rounded-xl p-3 mb-4 shadow-sm flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">إجمالي المحصّل</span>
+        <span className="font-bold text-lg">{totalCollected} {CURRENCY}</span>
+      </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-4 overflow-x-auto">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {filters.map((f) => (
-          <Button
+          <button
             key={f.key}
-            variant={filter === f.key ? 'default' : 'outline'}
-            size="sm"
             onClick={() => setFilter(f.key)}
-            className="rounded-full"
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+              filter === f.key
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-card text-muted-foreground border border-border/50 hover:bg-accent'
+            }`}
           >
-            {f.label}
-          </Button>
+            {f.label} ({f.count})
+          </button>
         ))}
       </div>
 
       {/* Reminder button */}
-      <Button variant="outline" className="w-full mb-4" onClick={handleReminder}>
-        <Send className="h-4 w-4 ml-2" />
-        إرسال تذكير لغير الدافعين
-      </Button>
+      {unpaidCount > 0 && (
+        <Button variant="outline" className="w-full mb-4 rounded-xl border-dashed border-2" onClick={handleReminder}>
+          <Send className="h-4 w-4 ml-2" />
+          إرسال تذكير لغير الدافعين ({unpaidCount})
+        </Button>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<CreditCard className="h-12 w-12" />} message="لا توجد دفعات" />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filtered.map((p) => (
-            <Card key={p.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openEdit(p)}>
+            <Card key={p.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition-all" onClick={() => openEdit(p)}>
               <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">{(p as any).profiles?.name}</p>
-                  <p className="text-sm text-muted-foreground">شقة {(p as any).profiles?.apartment_number} • {p.amount} {CURRENCY}</p>
+                <div className="flex items-center gap-3">
+                  <div className="bg-muted rounded-xl h-11 w-11 flex items-center justify-center">
+                    <span className="font-bold text-sm">{(p as any).profiles?.apartment_number}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{(p as any).profiles?.name}</p>
+                    <p className="text-sm text-muted-foreground">{p.amount} {CURRENCY}</p>
+                  </div>
                 </div>
                 <StatusPill status={p.status} />
               </CardContent>
@@ -185,13 +193,13 @@ export default function PaymentsPage() {
 
       {/* Edit Sheet */}
       <Sheet open={editOpen} onOpenChange={setEditOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[80vh] overflow-y-auto">
           <SheetHeader><SheetTitle>تعديل الدفعة</SheetTitle></SheetHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>الحالة</Label>
+              <Label className="text-sm font-medium">الحالة</Label>
               <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
-                <SelectTrigger className="h-12 mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="paid">مدفوع</SelectItem>
                   <SelectItem value="unpaid">غير مدفوع</SelectItem>
@@ -200,14 +208,14 @@ export default function PaymentsPage() {
               </Select>
             </div>
             <div>
-              <Label>المبلغ</Label>
-              <Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="h-12 mt-1" dir="ltr" />
+              <Label className="text-sm font-medium">المبلغ</Label>
+              <Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="h-12 mt-1.5 rounded-xl" dir="ltr" />
             </div>
             <div>
-              <Label>ملاحظات</Label>
-              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="mt-1" />
+              <Label className="text-sm font-medium">ملاحظات</Label>
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="mt-1.5 rounded-xl" />
             </div>
-            <Button className="w-full h-12" onClick={handleSave} disabled={saving}>
+            <Button className="w-full h-12 rounded-xl" onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
             </Button>
           </div>
