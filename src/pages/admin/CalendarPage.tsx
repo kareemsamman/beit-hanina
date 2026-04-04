@@ -42,9 +42,9 @@ export default function CalendarPage() {
       <h1 className="text-xl font-bold mb-4">التقويم الشهري</h1>
 
       <div className="flex items-center justify-between bg-card rounded-2xl p-3 mb-6 shadow-sm">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setYear(year + 1)}><ChevronRight className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setYear(year - 1)}><ChevronRight className="h-5 w-5" /></Button>
         <span className="text-xl font-bold">{year}</span>
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setYear(year - 1)}><ChevronLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setYear(year + 1)}><ChevronLeft className="h-5 w-5" /></Button>
       </div>
 
       <div className="grid grid-cols-3 gap-3">

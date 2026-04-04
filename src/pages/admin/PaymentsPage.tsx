@@ -115,9 +115,9 @@ export default function PaymentsPage() {
 
       {/* Month selector */}
       <div className="flex items-center justify-between bg-card rounded-2xl p-3 mb-4 border-0 shadow-sm">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={nextMonth}><ChevronRight className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={prevMonth}><ChevronRight className="h-5 w-5" /></Button>
         <span className="font-bold text-lg">{ARABIC_MONTHS[month]} {year}</span>
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={prevMonth}><ChevronLeft className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={nextMonth}><ChevronLeft className="h-5 w-5" /></Button>
       </div>
 
       {/* Summary */}
