@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-lg mx-auto pb-4">
       {/* Hero */}
-      <div className="relative bg-gradient-to-bl from-primary via-primary to-blue-700 px-5 pt-6 pb-16 animate-fade-in">
+      <div className="relative bg-gradient-to-bl from-primary via-primary to-blue-700 px-5 pt-6 pb-4 mb-16 animate-fade-in">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-white/60 text-sm mb-0.5">مرحباً</p>
