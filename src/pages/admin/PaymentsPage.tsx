@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronRight, ChevronLeft, CreditCard, Loader2, Send, TrendingUp, CheckCircle2, XCircle, CircleDot } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CreditCard, Loader2, Send, TrendingUp, CheckCircle2, XCircle, CircleDot, Clock } from 'lucide-react';
+import dayjs from 'dayjs';
 import { ARABIC_MONTHS, PAYMENT_STATUS_LABELS } from '@/types';
 import { CURRENCY } from '@/lib/constants';
 import type { MonthlyPayment, PaymentStatus, Profile } from '@/types';
@@ -208,6 +209,12 @@ export default function PaymentsPage() {
                     <div>
                       <p className="font-semibold">{(p as any).profiles?.name}</p>
                       <p className="text-sm text-muted-foreground">{p.amount} {CURRENCY}</p>
+                      {p.status === 'paid' && p.paid_at && (
+                        <div className="flex items-center gap-1 mt-0.5 text-xs text-success">
+                          <Clock className="h-3 w-3" />
+                          {dayjs(p.paid_at).format('DD/MM/YYYY HH:mm')}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <StatusPill status={p.status} />
@@ -234,6 +241,12 @@ export default function PaymentsPage() {
                     <p className="text-sm text-muted-foreground">شقة {(selected as any).profiles?.apartment_number}</p>
                   </div>
                 </div>
+                {selected.paid_at && (
+                  <div className="bg-green-50 rounded-xl p-3 flex items-center gap-2 text-green-700">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-sm font-medium">تم الدفع: {dayjs(selected.paid_at).format('DD/MM/YYYY — HH:mm')}</span>
+                  </div>
+                )}
                 <div>
                   <Label className="text-sm font-medium">الحالة</Label>
                   <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
