@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Wrench, Loader2, Clock, Plus, Trash2 } from 'lucide-react';
+import { Wrench, Loader2, Clock, Plus, Trash2, AlertCircle, CheckCircle2, Timer, XCircle } from 'lucide-react';
 import { REQUEST_TYPE_LABELS, REQUEST_STATUS_LABELS } from '@/types';
 import type { MaintenanceRequest, Profile, RequestStatus, RequestType } from '@/types';
 import { toast } from 'sonner';
@@ -31,6 +31,7 @@ export default function RequestsPage() {
   const [residents, setResidents] = useState<Profile[]>([]);
   const [newForm, setNewForm] = useState({ user_id: '', type: '' as string, description: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | RequestStatus>('all');
 
   useEffect(() => { fetchRequests(); fetchResidents(); }, []);
 
@@ -47,8 +48,6 @@ export default function RequestsPage() {
     setRequests(data as any || []);
     setLoading(false);
   };
-
-  const statusGroups: RequestStatus[] = ['new', 'in_progress', 'rejected', 'done'];
 
   const openDetail = (r: any) => {
     setSelected(r);
@@ -113,59 +112,141 @@ export default function RequestsPage() {
     setSubmitting(false);
   };
 
+  const newCount = requests.filter((r) => r.status === 'new').length;
+  const inProgressCount = requests.filter((r) => r.status === 'in_progress').length;
+  const doneCount = requests.filter((r) => r.status === 'done').length;
+  const rejectedCount = requests.filter((r) => r.status === 'rejected').length;
+
+  const filtered = statusFilter === 'all' ? requests : requests.filter((r) => r.status === statusFilter);
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case 'new': return <AlertCircle className="h-4 w-4 text-info" />;
+      case 'in_progress': return <Timer className="h-4 w-4 text-warning" />;
+      case 'done': return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case 'rejected': return <XCircle className="h-4 w-4 text-destructive" />;
+      default: return null;
+    }
+  };
+
+  const statusBorderColor = (status: string) => {
+    switch (status) {
+      case 'new': return 'border-r-blue-500';
+      case 'in_progress': return 'border-r-amber-500';
+      case 'done': return 'border-r-green-500';
+      case 'rejected': return 'border-r-red-500';
+      default: return '';
+    }
+  };
+
+  const filters = [
+    { key: 'all' as const, label: 'الكل', count: requests.length },
+    { key: 'new' as const, label: 'جديد', count: newCount },
+    { key: 'in_progress' as const, label: 'قيد العمل', count: inProgressCount },
+    { key: 'done' as const, label: 'تم', count: doneCount },
+    { key: 'rejected' as const, label: 'مرفوض', count: rejectedCount },
+  ];
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   return (
     <div className="p-4 max-w-lg mx-auto animate-fade-in">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">إدارة الطلبات</h1>
-        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">{requests.length} طلب</span>
+        <div className="flex items-center gap-2">
+          {newCount > 0 && (
+            <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium animate-pulse">{newCount} جديد</span>
+          )}
+          <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">{requests.length} طلب</span>
+        </div>
       </div>
 
-      {requests.length === 0 ? (
+      {/* Summary cards */}
+      <div className="grid grid-cols-4 gap-2 mb-4 animate-scale-in">
+        <div className="bg-blue-50 rounded-xl p-2.5 text-center">
+          <p className="text-xl font-bold text-blue-700">{newCount}</p>
+          <p className="text-[10px] text-blue-600">جديد</p>
+        </div>
+        <div className="bg-amber-50 rounded-xl p-2.5 text-center">
+          <p className="text-xl font-bold text-amber-700">{inProgressCount}</p>
+          <p className="text-[10px] text-amber-600">قيد العمل</p>
+        </div>
+        <div className="bg-green-50 rounded-xl p-2.5 text-center">
+          <p className="text-xl font-bold text-green-700">{doneCount}</p>
+          <p className="text-[10px] text-green-600">تم</p>
+        </div>
+        <div className="bg-red-50 rounded-xl p-2.5 text-center">
+          <p className="text-xl font-bold text-red-700">{rejectedCount}</p>
+          <p className="text-[10px] text-red-600">مرفوض</p>
+        </div>
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setStatusFilter(f.key)}
+            className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+              statusFilter === f.key
+                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-105'
+                : 'bg-card text-muted-foreground shadow-sm hover:shadow-md active:scale-95'
+            }`}
+          >
+            {f.label}
+            {f.count > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                statusFilter === f.key ? 'bg-white/20' : 'bg-muted'
+              }`}>{f.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Requests list */}
+      {filtered.length === 0 ? (
         <EmptyState icon={<Wrench className="h-12 w-12" />} message="لا توجد طلبات" />
       ) : (
-        statusGroups.map((status) => {
-          const group = requests.filter((r) => r.status === status);
-          if (group.length === 0) return null;
-          return (
-            <div key={status} className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <StatusPill status={status} />
-                <span className="text-sm text-muted-foreground">({group.length})</span>
-              </div>
-              <div className="space-y-2">
-                {group.map((r) => (
-                  <Card key={r.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition-all" onClick={() => openDetail(r)}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="bg-muted rounded-lg h-9 w-9 flex items-center justify-center">
-                            <span className="font-bold text-xs">{(r as any).profiles?.apartment_number}</span>
-                          </div>
-                          <span className="font-semibold">{(r as any).profiles?.name}</span>
-                        </div>
-                        <span className="text-xs bg-muted px-2 py-1 rounded-lg">{REQUEST_TYPE_LABELS[r.type]}</span>
+        <div className="space-y-2 animate-stagger">
+          {filtered.map((r) => (
+            <Card
+              key={r.id}
+              className={`border-0 border-r-[3px] ${statusBorderColor(r.status)} shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98] transition-all duration-200`}
+              onClick={() => openDetail(r)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-muted rounded-xl h-10 w-10 flex items-center justify-center">
+                      <span className="font-bold text-sm">{(r as any).profiles?.apartment_number}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-sm">{(r as any).profiles?.name}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {statusIcon(r.status)}
+                        <span className="text-xs text-muted-foreground">{REQUEST_STATUS_LABELS[r.status]}</span>
                       </div>
-                      <p className="text-sm line-clamp-2 text-muted-foreground">{r.description}</p>
-                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {dayjs(r.created_at).format('YYYY/MM/DD')}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          );
-        })
+                    </div>
+                  </div>
+                  <span className="text-xs bg-muted/80 px-2 py-1 rounded-lg">{REQUEST_TYPE_LABELS[r.type]}</span>
+                </div>
+                <p className="text-sm line-clamp-2 text-muted-foreground mr-[52px]">{r.description}</p>
+                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground mr-[52px]">
+                  <Clock className="h-3 w-3" />
+                  {dayjs(r.created_at).format('DD/MM/YYYY HH:mm')}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* FAB */}
       <Button
-        className="fixed bottom-20 left-4 h-14 w-14 rounded-2xl shadow-lg shadow-primary/25 z-40"
+        className="fixed bottom-20 left-4 h-14 w-14 rounded-2xl shadow-lg shadow-primary/25 z-40 active:scale-90 transition-transform"
         onClick={() => setAddOpen(true)}
       >
         <Plus className="h-6 w-6" />
@@ -180,7 +261,7 @@ export default function RequestsPage() {
               <Label className="text-sm font-medium">الساكن</Label>
               <Select value={newForm.user_id} onValueChange={(v) => setNewForm({ ...newForm, user_id: v })}>
                 <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue placeholder="اختر الساكن" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="top" sideOffset={4}>
                   {residents.map((r) => (
                     <SelectItem key={r.id} value={r.id}>شقة {r.apartment_number} — {r.name}</SelectItem>
                   ))}
@@ -191,7 +272,7 @@ export default function RequestsPage() {
               <Label className="text-sm font-medium">نوع الطلب</Label>
               <Select value={newForm.type} onValueChange={(v) => setNewForm({ ...newForm, type: v })}>
                 <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="top" sideOffset={4}>
                   {Object.entries(REQUEST_TYPE_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
                   ))}
@@ -202,49 +283,63 @@ export default function RequestsPage() {
               <Label className="text-sm font-medium">الوصف</Label>
               <Textarea value={newForm.description} onChange={(e) => setNewForm({ ...newForm, description: e.target.value })} className="mt-1.5 rounded-xl" rows={4} placeholder="وصف المشكلة أو الطلب..." />
             </div>
-            <Button className="w-full h-12 rounded-xl" onClick={handleAddRequest} disabled={submitting}>
+            <Button className="w-full h-12 rounded-xl shadow-md shadow-primary/20" onClick={handleAddRequest} disabled={submitting}>
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'إضافة الطلب'}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
 
+      {/* Detail Sheet */}
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
           {selected && (
             <>
               <SheetHeader><SheetTitle>تفاصيل الطلب</SheetTitle></SheetHeader>
               <div className="space-y-4 py-4">
-                <div className="bg-muted/50 rounded-xl p-4">
-                  <p className="text-xs text-muted-foreground">مقدم الطلب</p>
-                  <p className="font-semibold">{(selected as any).profiles?.name} — شقة {(selected as any).profiles?.apartment_number}</p>
+                {/* Requester info */}
+                <div className="bg-muted/50 rounded-xl p-4 flex items-center gap-3">
+                  <div className="bg-primary/10 rounded-xl h-12 w-12 flex items-center justify-center">
+                    <span className="text-primary font-bold">{(selected as any).profiles?.apartment_number}</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{(selected as any).profiles?.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{dayjs(selected.created_at).format('DD/MM/YYYY HH:mm')}</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">نوع الطلب</Label>
-                  <Select value={editType} onValueChange={setEditType}>
-                    <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(REQUEST_TYPE_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">نوع الطلب</Label>
+                    <Select value={editType} onValueChange={setEditType}>
+                      <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(REQUEST_TYPE_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">الحالة</Label>
+                    <Select value={editStatus} onValueChange={setEditStatus}>
+                      <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">جديد</SelectItem>
+                        <SelectItem value="in_progress">قيد العمل</SelectItem>
+                        <SelectItem value="done">تم</SelectItem>
+                        <SelectItem value="rejected">مرفوض</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
                 <div>
                   <Label className="text-sm font-medium">الوصف</Label>
                   <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="mt-1.5 rounded-xl" rows={3} />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">الحالة</Label>
-                  <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">جديد</SelectItem>
-                      <SelectItem value="in_progress">قيد العمل</SelectItem>
-                      <SelectItem value="rejected">مرفوض</SelectItem>
-                      <SelectItem value="done">تم</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 {editStatus === 'rejected' && (
                   <div>
@@ -254,13 +349,13 @@ export default function RequestsPage() {
                 )}
                 <div>
                   <Label className="text-sm font-medium">ملاحظة المسؤول</Label>
-                  <Textarea value={adminNote} onChange={(e) => setAdminNote(e.target.value)} className="mt-1.5 rounded-xl" />
+                  <Textarea value={adminNote} onChange={(e) => setAdminNote(e.target.value)} className="mt-1.5 rounded-xl" placeholder="ملاحظة داخلية..." />
                 </div>
-                <Button className="w-full h-12 rounded-xl" onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ'}
+                <Button className="w-full h-12 rounded-xl shadow-md shadow-primary/20" onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'حفظ التغييرات'}
                 </Button>
-                <Button variant="outline" className="w-full h-12 rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Trash2 className="h-4 w-4 ml-2" />حذف الطلب</>}
+                <Button variant="outline" className="w-full h-11 rounded-xl text-destructive border-destructive/20 hover:bg-destructive/5" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Trash2 className="h-4 w-4 ml-2" />حذف الطلب</>}
                 </Button>
               </div>
             </>
