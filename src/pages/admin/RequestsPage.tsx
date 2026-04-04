@@ -8,9 +8,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Wrench, Loader2, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Wrench, Loader2, Clock, Plus } from 'lucide-react';
 import { REQUEST_TYPE_LABELS, REQUEST_STATUS_LABELS } from '@/types';
-import type { MaintenanceRequest, Profile, RequestStatus } from '@/types';
+import type { MaintenanceRequest, Profile, RequestStatus, RequestType } from '@/types';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 
@@ -23,8 +24,17 @@ export default function RequestsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [residents, setResidents] = useState<Profile[]>([]);
+  const [newForm, setNewForm] = useState({ user_id: '', type: '' as string, description: '' });
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { fetchRequests(); }, []);
+  useEffect(() => { fetchRequests(); fetchResidents(); }, []);
+
+  const fetchResidents = async () => {
+    const { data } = await supabase.from('profiles').select('*').eq('role', 'resident').eq('is_active', true).order('apartment_number');
+    setResidents((data as Profile[]) || []);
+  };
 
   const fetchRequests = async () => {
     const { data } = await supabase
@@ -61,6 +71,29 @@ export default function RequestsPage() {
     setSaving(false);
     setDetailOpen(false);
     fetchRequests();
+  };
+
+  const handleAddRequest = async () => {
+    if (!newForm.user_id || !newForm.type || !newForm.description.trim()) {
+      toast.error('جميع الحقول مطلوبة');
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from('maintenance_requests').insert({
+      user_id: newForm.user_id,
+      type: newForm.type,
+      description: newForm.description.trim(),
+      status: 'new',
+    });
+    if (error) {
+      toast.error('خطأ في إضافة الطلب');
+    } else {
+      toast.success('تم إضافة الطلب');
+      setAddOpen(false);
+      setNewForm({ user_id: '', type: '', description: '' });
+      fetchRequests();
+    }
+    setSubmitting(false);
   };
 
   if (loading) {
@@ -112,6 +145,52 @@ export default function RequestsPage() {
           );
         })
       )}
+
+      {/* FAB */}
+      <Button
+        className="fixed bottom-20 left-4 h-14 w-14 rounded-2xl shadow-lg shadow-primary/25 z-40"
+        onClick={() => setAddOpen(true)}
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
+
+      {/* Add Request Sheet */}
+      <Sheet open={addOpen} onOpenChange={setAddOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[80vh] overflow-y-auto">
+          <SheetHeader><SheetTitle>إضافة طلب جديد</SheetTitle></SheetHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-sm font-medium">الساكن</Label>
+              <Select value={newForm.user_id} onValueChange={(v) => setNewForm({ ...newForm, user_id: v })}>
+                <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue placeholder="اختر الساكن" /></SelectTrigger>
+                <SelectContent>
+                  {residents.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>شقة {r.apartment_number} — {r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">نوع الطلب</Label>
+              <Select value={newForm.type} onValueChange={(v) => setNewForm({ ...newForm, type: v })}>
+                <SelectTrigger className="h-12 mt-1.5 rounded-xl"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(REQUEST_TYPE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">الوصف</Label>
+              <Textarea value={newForm.description} onChange={(e) => setNewForm({ ...newForm, description: e.target.value })} className="mt-1.5 rounded-xl" rows={4} placeholder="وصف المشكلة أو الطلب..." />
+            </div>
+            <Button className="w-full h-12 rounded-xl" onClick={handleAddRequest} disabled={submitting}>
+              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'إضافة الطلب'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
